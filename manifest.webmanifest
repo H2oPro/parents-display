@@ -1,0 +1,10 @@
+{
+  "name": "Mom and Dad's Day",
+  "short_name": "Their Day",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#15171a",
+  "theme_color": "#15171a"
+}

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Their Day">
+<meta name="theme-color" content="#15171a">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Mom and Dad's Day</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one calm screen. Big day and time of day on top, one "Next" row, one "Reminder" row. Deliberately single dark look for low glare. */
+:root {
+  --bg: #15171a;
+  --rule: #33363b;
+  --fg: #f4f1ea;
+  --muted: #a7a9ad;
+  --faint: #5b5e63;
+  --warm: #f2c46d;
+  --calm: #8fd6c0;
+  --now: #ffd98a;
+  --night-fg: #5d6168;
+  --datec: #c4b5f4;
+  --font: "Atkinson Hyperlegible", "Verdana", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font);
+  margin: 0; overflow: hidden;
+  -webkit-user-select: none; user-select: none; cursor: none;
+}
+.screen {
+  box-sizing: border-box; height: 100%;
+  padding-block: clamp(16px, 3.5vh, 48px);
+  padding-left: max(16px, min(5vw, 72px), env(safe-area-inset-left, 0px));
+  padding-right: max(16px, min(5vw, 72px), env(safe-area-inset-right, 0px));
+  display: grid; grid-template-rows: auto auto auto 1fr auto; gap: clamp(10px, 2.5vh, 32px);
+}
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+.day { font-weight: 700; font-size: clamp(36px, 9vh, 124px); line-height: 1; letter-spacing: -0.01em; }
+.part { font-weight: 700; color: var(--warm); }
+.datebig { color: var(--datec); margin-top: 0.08em; }
+.clock { text-align: right; }
+.time { font-weight: 700; font-size: clamp(30px, 7.5vh, 104px); white-space: nowrap; line-height: 1; font-variant-numeric: tabular-nums; }
+.date { font-size: clamp(18px, 3.6vh, 46px); color: var(--muted); margin-top: 0.3em; }
+.row:first-of-type { margin-top: clamp(4px, 1.5vh, 20px); }
+.row { border-top: 2px solid var(--rule); padding-top: clamp(10px, 2vh, 26px); min-width: 0; }
+.label { font-size: clamp(14px, 2.4vh, 30px); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.title { font-weight: 700; font-size: clamp(28px, 6.4vh, 88px); line-height: 1.12; margin-top: 0.1em; text-wrap: balance; overflow-wrap: anywhere; }
+.when { font-size: clamp(20px, 4.4vh, 58px); color: var(--calm); margin-top: 0.15em; }
+.when.soon { color: var(--now); font-weight: 700; }
+.who { margin-left: 0.6em; }
+body.stacked .title { font-size: clamp(24px, 5.2vh, 72px); }
+body.stacked .when { font-size: clamp(18px, 3.6vh, 48px); }
+body.stacked .row.reminder .title { font-size: clamp(24px, 5.4vh, 74px); }
+.foot { display: flex; justify-content: flex-end; font-size: clamp(11px, 1.5vh, 18px); color: var(--faint); font-variant-numeric: tabular-nums; }
+
+.night { display: none; }
+body.is-night .screen { display: none; }
+body.is-night .night {
+  display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; color: var(--night-fg); gap: 1.4vh; padding: 0 16px; box-sizing: border-box;
+}
+.night .big { font-size: clamp(40px, 10vh, 130px); font-weight: 700; }
+.night .sub { font-size: clamp(20px, 4.4vh, 56px); }
+.night .ntime { font-size: clamp(26px, 6vh, 80px); margin-top: 2vh; font-variant-numeric: tabular-nums; }
+
+.testbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; cursor: auto; -webkit-user-select: auto; user-select: auto;
+  background: #24272c; border-top: 1px solid var(--rule); color: var(--fg); font-size: 15px;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+}
+.testbar input[type=range] { flex: 1 1 220px; accent-color: var(--warm); }
+.testbar button { font: inherit; color: var(--fg); background: #33363b; border: 1px solid #4a4e55; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.testbar button:focus-visible, .testbar input:focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+.testbar .tlabel { min-width: 8.5em; font-variant-numeric: tabular-nums; }
+.testbar .tag { color: var(--warm); font-weight: 700; }
+@media (max-width: 640px) {
+  .clock { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<main class="screen" id="screen" aria-live="polite">
+  <div class="top">
+    <div>
+      <div class="day"><span id="day">Monday</span> <span class="part" id="part">Afternoon</span></div>
+      <div class="day datebig" id="date">November 9</div>
+    </div>
+    <div class="clock">
+      <div class="time" id="time">2:21 PM</div>
+    </div>
+  </div>
+  <section class="row" id="nextRow">
+    <div class="label">Next<span class="who" id="nextWho"></span></div>
+    <div class="title" id="nextTitle">Loading</div>
+    <div class="when" id="nextWhen"></div>
+  </section>
+  <section class="row" id="next2Row" hidden>
+    <div class="label"><span id="next2Label">Then</span><span class="who" id="next2Who"></span></div>
+    <div class="title" id="next2Title"></div>
+    <div class="when" id="next2When"></div>
+  </section>
+  <section class="row reminder" id="remRow" hidden>
+    <div class="label">Reminder<span class="who" id="remWho"></span></div>
+    <div class="title" id="remTitle"></div>
+  </section>
+  <div></div>
+  <div class="foot" id="foot"></div>
+</main>
+
+<div class="night" id="night" aria-live="polite">
+  <div class="big">It's nighttime</div>
+  <div class="sub" id="nightSub">Time to rest. Tuesday morning is next.</div>
+  <div class="ntime" id="ntime">2:47 AM</div>
+</div>
+
+<div class="testbar" id="testbar" hidden>
+  <span class="tag">Test mode</span>
+  <label for="scrub" class="tlabel" id="scrubLabel">Live</label>
+  <input type="range" id="scrub" min="0" max="1439" step="5" value="0" aria-label="Pretend time of day">
+  <button id="liveBtn" type="button">Back to live time</button>
+  <button id="chimeBtn" type="button">Play chime</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Settings ----------
+  var NIGHT_START = 21, NIGHT_END = 6;      // 9 PM to 6 AM shows the nighttime screen
+  var REMINDER_BEFORE_MIN = 30;             // show a reminder 30 min before it's due
+  var REMINDER_AFTER_MIN = 120;             // and keep it up for 2 hours after
+  var CLOSE_MIN = 60;                       // a second event starting within 60 min of the first (or overlapping it) is shown too
+
+  // ---------- Where the events come from ----------
+  // Live mode: the tablet's address carries ?relay=<relay address>&key=<access key>.
+  // Neither is stored in this public file. Without them the page shows made-up sample data.
+  var VERSION = "v11";
+  var params = new URLSearchParams(location.search);
+  var RELAY = params.get("relay"), KEY = params.get("key");
+  var LIVE = !!(RELAY && KEY);
+  var STALE_MIN = 20;                       // warn in the corner if the calendar hasn't loaded for 20 min
+
+  var COLORS = { pink: "#ff93c4", blue: "#7fb4ff", green: "#9fdc85", orange: "#ffb27a", white: "#f4f1ea" };
+
+  // Title rules (same for sample and live):
+  //   "Ann: Haircut" or "Mom: Haircut"   -> that person's event, in their color
+  //   "Lunch with a friend"              -> for everyone (no name)
+  //   "Reminder: Mom: Evening pills"     -> a reminder for that person
+  var SAMPLE_PEOPLE = [
+    { name: "Ann", aliases: ["Ann", "Mom"], color: "pink" },
+    { name: "Bob", aliases: ["Bob", "Dad"], color: "blue" }
+  ];
+  function at(dayOffset, h, m) {
+    var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + dayOffset); d.setHours(h, m || 0, 0, 0); return d;
+  }
+  function sampleEvents() {
+    return [
+      { title: "Reminder: Take your morning pills", start: at(0, 8, 0) },
+      { title: "Ann: Hair appointment", start: at(0, 10, 30), end: at(0, 11, 30) },
+      { title: "Lunch with a friend", start: at(0, 12, 30), end: at(0, 13, 30) },
+      { title: "Reminder: Dad: Take your afternoon pills", start: at(0, 14, 0) },
+      { title: "Bob: Doctor visit", start: at(0, 15, 30), end: at(0, 16, 30) },
+      { title: "Ann: Physical therapy", start: at(0, 16, 0), end: at(0, 17, 0) },
+      { title: "Mom: Phone call with a friend", start: at(0, 18, 30), end: at(0, 19, 0) },
+      { title: "Reminder: Ann: Take your evening pills", start: at(0, 19, 30) },
+      { title: "Reminder: Take your morning pills", start: at(1, 8, 0) },
+      { title: "Family visit", start: at(1, 14, 0), end: at(1, 16, 0) }
+    ];
+  }
+
+  var people = SAMPLE_PEOPLE;
+  function aliasMap() {
+    var map = {};
+    people.forEach(function (p) {
+      [p.name].concat(p.aliases || []).forEach(function (a) { map[String(a).toLowerCase()] = p; });
+    });
+    return map;
+  }
+  function normalize(raw, aliases) {
+    var t = String(raw.title || "").trim();
+    var type = "event", who = null, m;
+    if ((m = t.match(/^reminder\s*:\s*/i))) { type = "reminder"; t = t.slice(m[0].length); }
+    if ((m = t.match(/^([^:\-]{1,24}?)\s*[:\-]\s*/)) && aliases[m[1].trim().toLowerCase()]) {
+      who = aliases[m[1].trim().toLowerCase()]; t = t.slice(m[0].length);
+    }
+    return { type: type, who: who, title: t, start: raw.start, end: raw.end || null };
+  }
+  function parseWall(s) {
+    var m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+  }
+
+  var items = [];
+  var lastUpdated = null;
+  var lastError = false;
+
+  // ---------- Formatting ----------
+  var DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function partOfDay(h) {
+    if (h >= NIGHT_START || h < NIGHT_END) return "Night";
+    if (h < 12) return "Morning";
+    if (h < 17) return "Afternoon";
+    return "Evening";
+  }
+  function clock(d, withAmPm) {
+    var h = d.getHours(), m = d.getMinutes();
+    var s = ((h % 12) || 12) + ":" + (m < 10 ? "0" : "") + m;
+    return withAmPm ? s + (h < 12 ? " AM" : " PM") : s;
+  }
+  function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+  function isTomorrow(d, now) { var t = new Date(now); t.setDate(t.getDate() + 1); return sameDay(d, t); }
+
+  function whenText(ev, now) {
+    var mins = Math.round((ev.start - now) / 60000);
+    if (ev.end && ev.start <= now && ev.end > now) return { text: "Happening now", soon: true };
+    if (mins <= 5) return { text: "Starting now, " + clock(ev.start, true), soon: true };
+    if (mins < 60) return { text: clock(ev.start, true) + ", in " + mins + " minutes", soon: mins <= 30 };
+    if (sameDay(ev.start, now)) {
+      var hrs = mins / 60;
+      var rel = hrs < 1.5 ? "in about 1 hour" : (hrs < 4 ? "in about " + Math.round(hrs) + " hours" : "later today");
+      return { text: clock(ev.start, true) + ", " + rel, soon: false };
+    }
+    if (isTomorrow(ev.start, now)) {
+      return { text: "Tomorrow " + partOfDay(ev.start.getHours()).toLowerCase() + ", " + clock(ev.start, true), soon: false };
+    }
+    return { text: DAYS[ev.start.getDay()] + ", " + clock(ev.start, true), soon: false };
+  }
+
+  // ---------- Pick what to show ----------
+  function pickNext(now) {
+    var events = items.filter(function (i) {
+      if (i.type !== "event") return false;
+      var end = i.end || new Date(i.start.getTime() + 60 * 60000);
+      return end > now;
+    }).sort(function (a, b) { return a.start - b.start; });
+    return events;
+  }
+  function closeTogether(a, b) {
+    var aEnd = a.end || new Date(a.start.getTime() + 60 * 60000);
+    return b.start < aEnd || (b.start - a.start) / 60000 <= CLOSE_MIN;
+  }
+  function pickReminder(now) {
+    var active = items.filter(function (i) {
+      if (i.type !== "reminder") return false;
+      var diff = (i.start - now) / 60000;
+      return diff <= REMINDER_BEFORE_MIN && diff >= -REMINDER_AFTER_MIN;
+    }).sort(function (a, b) { return b.start - a.start; });
+    return active[0] || null;
+  }
+
+  // ---------- Gentle chime when something new appears ----------
+  var CHIME_VOLUME = 0.18;                  // 0 to 1; keep it soft
+  var audioCtx = null;
+  function getAudio() {
+    try {
+      if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; audioCtx = new AC(); }
+      if (audioCtx.state === "suspended") audioCtx.resume().catch(function () {});
+      return audioCtx;
+    } catch (e) { return null; }
+  }
+  function chime() {
+    var ctx = getAudio(); if (!ctx) return;
+    var t0 = ctx.currentTime + 0.05;
+    [[659.25, 0], [880, 0.35]].forEach(function (n) {
+      var osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = n[0];
+      g.gain.setValueAtTime(0.0001, t0 + n[1]);
+      g.gain.exponentialRampToValueAtTime(CHIME_VOLUME, t0 + n[1] + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + 1.8);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t0 + n[1]); osc.stop(t0 + n[1] + 1.9);
+    });
+  }
+  document.addEventListener("pointerdown", function () { getAudio(); }, { once: true });
+  var lastKeys = null;
+  function keyOf(i) { return i ? i.title + "|" + i.start.getTime() : ""; }
+  function maybeChime(keys, night) {
+    if (lastKeys !== null && !night && testOffsetMin === null) {
+      var isNew = keys.some(function (k) { return k && lastKeys.indexOf(k) === -1; });
+      if (isNew) chime();
+    }
+    lastKeys = keys;
+  }
+
+  // ---------- Render ----------
+  function colorOf(p) { return p ? (COLORS[p.color] || p.color || "") : ""; }
+  function setWho(prefix, who) {
+    var label = $(prefix + "Who"), title = $(prefix + "Title");
+    label.textContent = who ? "for " + who.name : "";
+    label.style.color = colorOf(who);
+    title.style.color = colorOf(who);
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var testOffsetMin = null;
+
+  function currentTime() {
+    var real = new Date();
+    if (testOffsetMin === null) return real;
+    var d = new Date(real); d.setHours(0, testOffsetMin, 0, 0); return d;
+  }
+
+  function render() {
+    var now = currentTime();
+    var h = now.getHours();
+    var night = h >= NIGHT_START || h < NIGHT_END;
+    document.body.classList.toggle("is-night", night);
+
+    if (night) {
+      var morningDay = h < NIGHT_END ? DAYS[now.getDay()] : DAYS[(now.getDay() + 1) % 7];
+      $("nightSub").textContent = "Time to rest. " + morningDay + " morning is next.";
+      $("ntime").textContent = clock(now, true);
+      maybeChime([], true);
+      return;
+    }
+
+    $("day").textContent = DAYS[now.getDay()];
+    $("part").textContent = partOfDay(h);
+    $("time").textContent = clock(now, true);
+    $("date").textContent = MONTHS[now.getMonth()] + " " + now.getDate();
+
+    if (LIVE && !lastUpdated) {               // never say "nothing today" before the calendar has loaded
+      $("nextTitle").textContent = ""; $("nextWhen").textContent = ""; setWho("next", null);
+      $("next2Row").hidden = true; $("remRow").hidden = true;
+      $("foot").textContent = footText(now);
+      return;
+    }
+    var upcoming = pickNext(now);
+    var next = upcoming[0] || null;
+    var second = (next && upcoming[1] && closeTogether(next, upcoming[1])) ? upcoming[1] : null;
+    document.body.classList.toggle("stacked", !!second);
+    $("next2Row").hidden = !second;
+    if (second) {
+      var w2 = whenText(second, now);
+      $("next2Label").textContent = Math.abs(second.start - next.start) <= 5 * 60000 ? "Also" : "Then";
+      $("next2Title").textContent = second.title;
+      setWho("next2", second.who);
+      $("next2When").textContent = w2.text;
+      $("next2When").className = "when" + (w2.soon ? " soon" : "");
+    }
+    if (next) {
+      var w = whenText(next, now);
+      $("nextTitle").textContent = next.title;
+      setWho("next", next.who);
+      $("nextWhen").textContent = w.text;
+      $("nextWhen").className = "when" + (w.soon ? " soon" : "");
+    } else {
+      $("nextTitle").textContent = "Nothing else today";
+      setWho("next", null);
+      $("nextWhen").textContent = "Enjoy a quiet " + partOfDay(h).toLowerCase();
+      $("nextWhen").className = "when";
+    }
+
+    var rem = pickReminder(now);
+    $("remRow").hidden = !rem;
+    if (rem) { $("remTitle").textContent = rem.title; setWho("rem", rem.who); }
+
+    maybeChime([keyOf(next), keyOf(second), keyOf(rem)], false);
+    $("foot").textContent = footText(now);
+  }
+
+  // ---------- Test mode (open the page with #test) ----------
+  function setupTestMode() {
+    var on = location.hash === "#test";
+    $("testbar").hidden = !on;
+    document.body.style.cursor = on ? "auto" : "";
+    if (!on) { testOffsetMin = null; render(); return; }
+    var n = new Date();
+    $("scrub").value = n.getHours() * 60 + n.getMinutes();
+  }
+  $("scrub").addEventListener("input", function () {
+    testOffsetMin = parseInt(this.value, 10);
+    var d = new Date(); d.setHours(0, testOffsetMin, 0, 0);
+    $("scrubLabel").textContent = "Pretend " + clock(d, true);
+    render();
+  });
+  $("liveBtn").addEventListener("click", function () {
+    testOffsetMin = null; $("scrubLabel").textContent = "Live"; render();
+  });
+  $("chimeBtn").addEventListener("click", chime);
+  window.addEventListener("hashchange", setupTestMode);
+
+  // ---------- Keep the screen awake when the browser allows it ----------
+  function keepAwake() {
+    try {
+      if (navigator.wakeLock && document.visibilityState === "visible") {
+        navigator.wakeLock.request("screen").catch(function () {});
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", keepAwake);
+
+  // ---------- Pixel shift (keeps static lines from sitting in one spot for months) ----------
+  var SHIFT_PX = 6, SHIFT_EVERY_MIN = 10;
+  var shiftSpots = [[0,0],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+  var shiftIndex = 0;
+  function pixelShift() {
+    shiftIndex = (shiftIndex + 1) % shiftSpots.length;
+    var x = shiftSpots[shiftIndex][0] * SHIFT_PX, y = shiftSpots[shiftIndex][1] * SHIFT_PX;
+    var t = "translate(" + x + "px, " + y + "px)";
+    $("screen").style.transform = t;
+    $("night").style.transform = t;
+  }
+
+  // ---------- Refresh loop ----------
+  function footText(now) {
+    if (!LIVE) return "sample data · " + VERSION;
+    if (!lastUpdated) return (lastError ? "can't reach calendar" : "loading calendar") + " · " + VERSION;
+    var stale = (now - lastUpdated) / 60000 > STALE_MIN;
+    return (stale ? "not updated since " : "updated ") + clock(lastUpdated, true) + " · " + VERSION;
+  }
+  function refreshData() {
+    if (!LIVE) {
+      people = SAMPLE_PEOPLE;
+      var a = aliasMap();
+      items = sampleEvents().map(function (e) { return normalize(e, a); });
+      lastUpdated = new Date();
+      render();
+      return;
+    }
+    fetch(RELAY, { headers: { Authorization: "Bearer " + KEY }, cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("status " + r.status); return r.json(); })
+      .then(function (data) {
+        if (Array.isArray(data.people)) people = data.people;
+        var a = aliasMap();
+        items = (data.events || []).map(function (e) {
+          return normalize({ title: e.title, start: parseWall(e.start), end: parseWall(e.end) }, a);
+        }).filter(function (e) { return e.start; });
+        lastUpdated = new Date(); lastError = false;
+        render();
+      })
+      .catch(function () { lastError = true; render(); });   // keep showing the last good events
+  }
+
+  setupTestMode();
+  refreshData();
+  keepAwake();
+  setInterval(render, 15000);
+  setInterval(refreshData, 5 * 60000);
+  setInterval(pixelShift, SHIFT_EVERY_MIN * 60000);
+})();
+</script>
+</body>
+</html>
