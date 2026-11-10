@@ -145,7 +145,7 @@ body.is-night .night {
   // ---------- Where the events come from ----------
   // Live mode: the tablet's address carries ?relay=<relay address>&key=<access key>.
   // Neither is stored in this public file. Without them the page shows made-up sample data.
-  var VERSION = "v11";
+  var VERSION = "v12";
   var params = new URLSearchParams(location.search);
   var RELAY = params.get("relay"), KEY = params.get("key");
   var LIVE = !!(RELAY && KEY);
@@ -373,7 +373,7 @@ body.is-night .night {
 
   // ---------- Test mode (open the page with #test) ----------
   function setupTestMode() {
-    var on = location.hash === "#test";
+    var on = location.hash === "#test" && !LIVE;   // test tools never appear on the live tablet
     $("testbar").hidden = !on;
     document.body.style.cursor = on ? "auto" : "";
     if (!on) { testOffsetMin = null; render(); return; }
