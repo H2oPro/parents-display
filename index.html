@@ -30,6 +30,7 @@
   --font: "Atkinson Hyperlegible", "Verdana", "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   background: var(--bg); color: var(--fg); font-family: var(--font);
@@ -145,7 +146,7 @@ body.is-night .night {
   // ---------- Where the events come from ----------
   // Live mode: the tablet's address carries ?relay=<relay address>&key=<access key>.
   // Neither is stored in this public file. Without them the page shows made-up sample data.
-  var VERSION = "v12";
+  var VERSION = "v13";
   var params = new URLSearchParams(location.search);
   var RELAY = params.get("relay"), KEY = params.get("key");
   var LIVE = !!(RELAY && KEY);
